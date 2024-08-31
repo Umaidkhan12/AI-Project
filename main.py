@@ -8,7 +8,7 @@ class Game:
     def __init__(self):
         pygame.init()
         pygame.display.set_caption("Box Adventure")
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
         self.MAIN_BODY = pygame.image.load('Assets/Box.png')
         self.main_body_rect = self.MAIN_BODY.get_rect(center=(WIDTH // 2, HEIGHT // 2))

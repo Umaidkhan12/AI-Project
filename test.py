@@ -9,6 +9,7 @@ TILE_SIZE = 18
 MAP_FILE = 'Assets/FinalMazaMap.csv'
 WALL_TILE = 0  # Represents walls in the map
 EMPTY_TILE = 1  # Represents empty spaces in the map
+TRIGGER_TILES = [(486, 972), (18, 18)]  # Example trigger tiles (x, y)
 
 class Game:
     def __init__(self):
@@ -41,6 +42,7 @@ class Game:
         # Create wall rectangles for collision detection
         self.wall_rects = self.create_wall_rects()
         self.map_surface = pygame.Surface((self.map_width, self.map_height))
+        self.update_map()
 
     def load_map_from_csv(self, filename):
         """Load map layout from a CSV file."""
@@ -56,15 +58,19 @@ class Game:
                     wall_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
         return wall_rects
 
-    def draw_map(self):
-        """Draw the map on the off-screen surface and blit to the screen."""
+    def update_map(self):
+        """Update the map surface and wall rectangles based on the current map layout."""
         self.map_surface.fill((255, 255, 255))  # Fill with white
+        self.wall_rects = []
         for y, row in enumerate(self.map_layout):
             for x, tile in enumerate(row):
                 tile_image = self.tile_image if tile == WALL_TILE else self.empty_tile_image
                 self.map_surface.blit(tile_image, (x * TILE_SIZE, y * TILE_SIZE))
+                if tile == WALL_TILE:
+                    self.wall_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
-        # Draw the map surface to the screen with scrolling
+    def draw_map(self):
+        """Draw the map on the off-screen surface and blit to the screen."""
         self.screen.blit(self.map_surface, (-self.map_x, -self.map_y))
 
     def draw_character(self):
@@ -102,10 +108,29 @@ class Game:
         # Update character position
         self.character_rect = new_rect
 
+        # Check for triggers
+        self.check_triggers()
 
         # Clamp map position to keep the map within the window
         self.map_x = max(0, min(self.map_x, self.map_width - WIDTH))
         self.map_y = max(0, min(self.map_y, self.map_height - HEIGHT))
+
+    def check_triggers(self):
+        """Check if the character has entered a trigger area and update the map."""
+        # Convert character's position to tile coordinates
+        char_x = (self.character_rect.centerx + self.map_x) // TILE_SIZE
+        char_y = (self.character_rect.centery + self.map_y) // TILE_SIZE
+
+        # Check if the character's tile coordinates match any trigger tile
+        if (char_x, char_y) in TRIGGER_TILES:
+            print(f"Trigger activated at ({char_x}, {char_y})")  # Debugging line
+            # Example of updating the map at the trigger location
+            trigger_index = TRIGGER_TILES.index((char_x, char_y))
+            if trigger_index >= 0:
+                self.map_layout[char_y][char_x] = EMPTY_TILE  # Example change
+                self.update_map()
+                # Optionally remove the trigger from the list if it should only trigger once
+                TRIGGER_TILES.pop(trigger_index)
 
     def main(self):
         """Main game loop."""
