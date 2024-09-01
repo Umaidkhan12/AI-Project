@@ -169,7 +169,6 @@ class GameTesting:
                 self.update_map(3, 15, 3, 20, 0)
                 self.noEntry = True
             elif self.is_eligible:
-                print(self.exit_clue[0]," ",self.exit_clue[1]," ",self.exit_clue[2])
                 if self.exit_clue != [True, True, True]:
                     self.update_map(3, 15, 3, 20, 0)
                     self.noEntry = True
