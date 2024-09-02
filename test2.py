@@ -88,9 +88,18 @@ class GameTesting:
                 if tile == 1:
                     self.screen.blit(self.grass_image, (x * TILE_SIZE, y * TILE_SIZE))
                 if tile == 2:
-                    self.screen.blit(self.finish_image, (x * TILE_SIZE, y * TILE_SIZE))
+                    if self.is_eligible:
+                        if self.exit_clue == [True, True, True]:
+                            self.screen.blit(self.finish_image, (x * TILE_SIZE, y * TILE_SIZE))
+                        else:
+                            self.screen.blit(self.grass_image, (x * TILE_SIZE, y * TILE_SIZE))
+                    else:
+                        self.screen.blit(self.grass_image, (x * TILE_SIZE, y * TILE_SIZE))
                 if tile == 3:
-                    self.screen.blit(self.ground_image, (x * TILE_SIZE, y * TILE_SIZE))
+                    if self.is_eligible:
+                        self.screen.blit(self.ground_image, (x * TILE_SIZE, y * TILE_SIZE))
+                    else:
+                        self.screen.blit(self.grass_image, (x * TILE_SIZE, y * TILE_SIZE))
 
         self.display_messages()
 
@@ -148,6 +157,7 @@ class GameTesting:
         tile_y = self.player_rect.y // TILE_SIZE
 
         rects = {
+            'fullMap': pygame.Rect(1 * TILE_SIZE, 1 * TILE_SIZE, (53 - 1 + 1) * TILE_SIZE, (51 - 1 + 1) * TILE_SIZE),
             'trueExit': pygame.Rect(1 * TILE_SIZE, 15 * TILE_SIZE, (3 - 1 + 1) * TILE_SIZE, (20 - 15 + 1) * TILE_SIZE),
             'centerRectWall1': pygame.Rect(30 * TILE_SIZE, 18 * TILE_SIZE, (33 - 30 + 1) * TILE_SIZE, (21 - 18 + 1) * TILE_SIZE),
             'centerRectWall2': pygame.Rect(28 * TILE_SIZE, 16 * TILE_SIZE, (35 - 28 + 1) * TILE_SIZE, (22 - 16 + 1) * TILE_SIZE),
@@ -173,6 +183,12 @@ class GameTesting:
             'exitClueExit2' : pygame.Rect(19 * TILE_SIZE, 50 * TILE_SIZE, (20 - 19 + 1) * TILE_SIZE, (52 - 50 + 1) * TILE_SIZE),
         }
 
+        if rects['fullMap'].colliderect(self.player_rect):
+            self.update_map(10, 53, 12, 53, 0)
+            self.update_map(28, 53, 30, 53, 0)
+            self.update_map(42, 53, 44, 53, 0)
+            self.update_map(51, 53, 52, 53, 0)
+
         if rects['trueExit'].colliderect(self.player_rect):
             if not self.is_eligible:
                 self.update_map(3, 15, 3, 20, 0)
@@ -185,8 +201,12 @@ class GameTesting:
                     self.game_over = True
 
         else:
-            self.update_map(3, 15, 3, 20, 2)
-            self.noEntry = False
+            if self.is_eligible:
+                self.update_map(3, 15, 3, 20, 2)
+                self.noEntry = False
+            else:
+                self.update_map(3, 15, 3, 20, 1)
+                self.noEntry = False
 
         self.reach_center = rects['centerRectWall1'].colliderect(self.player_rect)
 
