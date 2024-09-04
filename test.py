@@ -1,153 +1,66 @@
-import pygame
-import csv
+import random
 
-# Constants
-WIDTH, HEIGHT = 990, 1030
-FPS = 60
-CHARACTER_SPEED = 5
-TILE_SIZE = 18
-MAP_FILE = 'Assets/FinalMazaMap.csv'
-WALL_TILE = 0  # Represents walls in the map
-EMPTY_TILE = 1  # Represents empty spaces in the map
-TRIGGER_TILES = [(486, 972), (18, 18)]  # Example trigger tiles (x, y)
+'''
+[                                   [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],     [False, False, False, False, False, False, False, False, False, False],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],     [False, False, False, False, False, False, False, False, False, False], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],     [False, False, False, False, False, False, False, False, False, False], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],     [False, False, False, False, False, False, False, False, False, False], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],     [False, False, False, False, False, False, False, False, False, False], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],     [False, False, False, False, False, False, False, False, False, False], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],     [False, False, False, False, False, False, False, False, False, False], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],     [False, False, False, False, False, False, False, False, False, False], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],     [False, False, False, False, False, False, False, False, False, False], 
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]      [False, False, False, False, False, False, False, False, False, False], 
+]                                   ]
+'''
 
-class Game:
-    def __init__(self):
-        pygame.init()
-        pygame.display.set_caption("Box Adventure")
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        self.clock = pygame.time.Clock()
+def generate_maze_dfs(width, height):
+    # Initialize the maze with walls (0 represents walls)
+    maze = [[0 for _ in range(width)] for _ in range(height)]
+    # Stack for DFS
+    stack = []
+    visited = [[False for _ in range(width)] for _ in range(height)]
 
-        # Load images
-        self.tile_image = pygame.image.load('Assets/wall.jpg')
-        self.tile_image = pygame.transform.scale(self.tile_image, (TILE_SIZE, TILE_SIZE))
-        self.empty_tile_image = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        self.empty_tile_image.fill((255, 255, 255))  # White tiles for empty spaces
-        self.character_image = pygame.image.load('Assets/Box.png')
-        self.character_image = pygame.transform.scale(self.character_image, (TILE_SIZE, TILE_SIZE))
+    def is_valid(x, y):
+        """Check if the position (x, y) is within maze boundaries and unvisited."""
+        return 0 <= x <= width and 0 <= y <= height and not visited[y][x]
 
-        # Load map layout from CSV
-        self.map_layout = self.load_map_from_csv(MAP_FILE)
-        self.map_width = len(self.map_layout[0]) * TILE_SIZE
-        self.map_height = len(self.map_layout) * TILE_SIZE
+    def get_neighbors(x, y):
+        """Get unvisited neighbors."""
+        neighbors = []
+        for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
+            nx, ny = x + dx, y + dy
+            if is_valid(nx, ny):
+                neighbors.append((nx, ny))
+        return neighbors
 
-        # Calculate character starting position (bottom center of the map)
-        self.character_rect = self.character_image.get_rect(
-            center=(self.map_width // 2, self.map_height - TILE_SIZE // 2)
-        )
-        
-        # Initialize map position
-        self.map_x, self.map_y = 0, 0
+    def dfs(x, y):
+        stack.append((x, y))
+        visited[y][x] = True
+        maze[y][x] = 1  # Mark the cell as part of the maze (1 represents path)
 
-        # Create wall rectangles for collision detection
-        self.wall_rects = self.create_wall_rects()
-        self.map_surface = pygame.Surface((self.map_width, self.map_height))
-        self.update_map()
+        while stack:
+            x, y = stack[-1]
+            neighbors = get_neighbors(x, y)
+            if neighbors:
+                nx, ny = random.choice(neighbors)
+                # Remove the wall between (x, y) and (nx, ny)
+                maze[(y + ny) // 2][(x + nx) // 2] = 1
+                maze[ny][nx] = 1
+                visited[ny][nx] = True
+                stack.append((nx, ny))
+            else:
+                stack.pop()
 
-    def load_map_from_csv(self, filename):
-        """Load map layout from a CSV file."""
-        with open(filename, newline='') as csvfile:
-            return [[int(tile) for tile in row] for row in csv.reader(csvfile)]
+    # Start DFS from the top-left corner
+    dfs(1, 1)
 
-    def create_wall_rects(self):
-        """Create a list of rectangles representing wall tiles."""
-        wall_rects = []
-        for y, row in enumerate(self.map_layout):
-            for x, tile in enumerate(row):
-                if tile == WALL_TILE:
-                    wall_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-        return wall_rects
+    return maze
 
-    def update_map(self):
-        """Update the map surface and wall rectangles based on the current map layout."""
-        self.map_surface.fill((255, 255, 255))  # Fill with white
-        self.wall_rects = []
-        for y, row in enumerate(self.map_layout):
-            for x, tile in enumerate(row):
-                tile_image = self.tile_image if tile == WALL_TILE else self.empty_tile_image
-                self.map_surface.blit(tile_image, (x * TILE_SIZE, y * TILE_SIZE))
-                if tile == WALL_TILE:
-                    self.wall_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+# Example usage
+width, height = 100, 100
+maze = generate_maze_dfs(width, height)
 
-    def draw_map(self):
-        """Draw the map on the off-screen surface and blit to the screen."""
-        self.screen.blit(self.map_surface, (-self.map_x, -self.map_y))
-
-    def draw_character(self):
-        """Draw the character on the screen."""
-        self.screen.blit(self.character_image, self.character_rect.topleft)
-
-    def handle_movement(self):
-        """Handle movement of the character and scrolling of the map."""
-        keys = pygame.key.get_pressed()
-        dx, dy = 0, 0
-        if keys[pygame.K_LEFT]:
-            dx = -CHARACTER_SPEED
-        if keys[pygame.K_RIGHT]:
-            dx = CHARACTER_SPEED
-        if keys[pygame.K_UP]:
-            dy = -CHARACTER_SPEED
-        if keys[pygame.K_DOWN]:
-            dy = CHARACTER_SPEED
-
-        # Move character
-        new_rect = self.character_rect.move(dx, dy)
-
-        # Check for collisions with walls
-        for wall_rect in self.wall_rects:
-            if new_rect.colliderect(wall_rect):
-                if dx > 0:  # Moving right
-                    new_rect.right = wall_rect.left
-                if dx < 0:  # Moving left
-                    new_rect.left = wall_rect.right
-                if dy > 0:  # Moving down
-                    new_rect.bottom = wall_rect.top
-                if dy < 0:  # Moving up
-                    new_rect.top = wall_rect.bottom
-
-        # Update character position
-        self.character_rect = new_rect
-
-        # Check for triggers
-        self.check_triggers()
-
-        # Clamp map position to keep the map within the window
-        self.map_x = max(0, min(self.map_x, self.map_width - WIDTH))
-        self.map_y = max(0, min(self.map_y, self.map_height - HEIGHT))
-
-    def check_triggers(self):
-        """Check if the character has entered a trigger area and update the map."""
-        # Convert character's position to tile coordinates
-        char_x = (self.character_rect.centerx + self.map_x) // TILE_SIZE
-        char_y = (self.character_rect.centery + self.map_y) // TILE_SIZE
-
-        # Check if the character's tile coordinates match any trigger tile
-        if (char_x, char_y) in TRIGGER_TILES:
-            print(f"Trigger activated at ({char_x}, {char_y})")  # Debugging line
-            # Example of updating the map at the trigger location
-            trigger_index = TRIGGER_TILES.index((char_x, char_y))
-            if trigger_index >= 0:
-                self.map_layout[char_y][char_x] = EMPTY_TILE  # Example change
-                self.update_map()
-                # Optionally remove the trigger from the list if it should only trigger once
-                TRIGGER_TILES.pop(trigger_index)
-
-    def main(self):
-        """Main game loop."""
-        running = True
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-
-            self.handle_movement()
-            self.screen.fill((255, 255, 255))  # Clear the screen with white
-            self.draw_map()
-            self.draw_character()
-            pygame.display.flip()
-            self.clock.tick(FPS)
-
-        pygame.quit()
-
-if __name__ == "__main__":
-    Game().main()
+for row in maze:
+    print(' '.join(['#' if cell == 0 else '.' for cell in row]))
